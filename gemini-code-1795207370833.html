@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>INSTAN ID</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    * { box-sizing: border-box; font-family: 'Roboto', sans-serif; margin: 0; padding: 0; }
+    body { background-color: #f8f9fa; color: #202124; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* LOGIN SCREEN */
+    #login-screen {
+      position: fixed; inset: 0; background: #f1f3f4; display: flex; align-items: center; justify-content: center; z-index: 1000;
+    }
+    .login-card {
+      background: #fff; padding: 36px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 380px;
+    }
+    .login-card h2 { color: #1a73e8; margin-bottom: 6px; font-size: 24px; text-align: center; }
+    .login-card p { color: #5f6368; font-size: 13px; text-align: center; margin-bottom: 24px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 500; color: #5f6368; margin-bottom: 6px; }
+    .form-group input, .form-group select {
+      width: 100%; padding: 10px 12px; border: 1px solid #dadce0; border-radius: 6px; font-size: 14px; outline: none;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: #1a73e8; }
+    .input-with-btn { display: flex; gap: 8px; align-items: center; }
+    .input-with-btn input { flex: 1; }
+    .btn-scan {
+      background: #e8f0fe; color: #1a73e8; border: 1px solid #c2d7fa; border-radius: 6px;
+      padding: 9px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 500; white-space: nowrap;
+    }
+    .btn-scan:hover { background: #d2e3fc; }
+    #qr-reader {
+      margin-top: 10px; border-radius: 6px; overflow: hidden; border: 1px solid #dadce0; display: none;
+    }
+    .form-alert {
+      background: #fce8e6; color: #c5221f; border: 1px solid #f6aea9; border-radius: 6px;
+      padding: 10px 12px; font-size: 13px; margin-bottom: 14px; display: none;
+    }
+    .btn-primary {
+      width: 100%; background: #1a73e8; color: #fff; border: none; padding: 11px; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer;
+    }
+    .btn-primary:hover { background: #1557b0; }
+    .error-msg { color: #d93025; font-size: 13px; margin-top: 10px; text-align: center; }
+
+    /* TOP NAVBAR */
+    .navbar {
+      height: 56px; background: #fff; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex-shrink: 0;
+    }
+    .nav-left { display: flex; align-items: center; gap: 16px; }
+    .brand { font-size: 19px; font-weight: 500; color: #202124; letter-spacing: 0.5px; }
+    .search-box {
+      background: #f1f3f4; border-radius: 8px; display: flex; align-items: center; padding: 6px 14px; width: 340px;
+    }
+    .search-box input {
+      border: none; background: transparent; outline: none; margin-left: 8px; width: 100%; font-size: 14px;
+    }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .user-badge {
+      background: #e8f0fe; color: #1a73e8; padding: 5px 12px; border-radius: 16px; font-size: 12px; font-weight: 500;
+    }
+    .icon-btn {
+      background: none; border: 1px solid #dadce0; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 13px; color: #3c4043;
+    }
+    .icon-btn:hover { background: #f1f3f4; }
+
+    /* MAIN SPLIT LAYOUT */
+    .main-container {
+      display: flex; flex: 1; overflow: hidden;
+    }
+    .left-panel {
+      flex: 1.8; background: #fff; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; overflow: hidden;
+    }
+    .table-header-bar {
+      padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f3f4;
+    }
+    .table-title { font-size: 17px; font-weight: 500; }
+    .btn-add {
+      background: #2b7de9; color: #fff; border: none; padding: 7px 14px; border-radius: 4px; font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 4px;
+    }
+    .btn-add:hover { background: #1a73e8; }
+    .table-wrapper { overflow-y: auto; flex: 1; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      position: sticky; top: 0; background: #fff; text-align: left; padding: 12px 16px; color: #5f6368; font-weight: 600; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e0e0e0;
+    }
+    tbody tr { border-bottom: 1px solid #f1f3f4; cursor: pointer; transition: background 0.15s; }
+    tbody tr:hover { background: #f8f9fa; }
+    tbody tr.selected { background: #e8f0fe; }
+    tbody td { padding: 12px 16px; color: #202124; }
+    .status-pill { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+    .status-delivered { color: #188038; }
+    .status-undelivered { color: #3c4043; }
+
+    /* RIGHT PANEL: DETAIL VIEW */
+    .right-panel {
+      flex: 1; background: #fff; display: flex; flex-direction: column; overflow-y: auto; min-width: 340px;
+    }
+    .detail-header {
+      padding: 14px 20px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center;
+    }
+    .detail-invoice-title { font-size: 17px; font-weight: 500; }
+    .detail-actions-top { display: flex; gap: 8px; }
+    .btn-edit-top {
+      background: #2b7de9; color: #fff; border: none; padding: 6px 14px; border-radius: 4px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 4px;
+    }
+    .btn-delete-top {
+      background: #fff; color: #1a73e8; border: 1px solid #dadce0; padding: 6px 10px; border-radius: 4px; cursor: pointer; display: flex; align-items: center;
+    }
+    .btn-delete-top:hover { background: #fce8e6; color: #d93025; border-color: #f6aea9; }
+
+    .quick-action-box {
+      padding: 24px 20px; border-bottom: 1px solid #f1f3f4; display: flex; flex-direction: column; align-items: flex-start;
+    }
+    .action-circle-wrapper {
+      display: flex; flex-direction: column; align-items: center; cursor: pointer;
+    }
+    .action-circle {
+      width: 48px; height: 48px; border-radius: 50%; background: #2b7de9; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(43,125,233,0.4); transition: transform 0.15s, background 0.15s;
+    }
+    .action-circle:hover { background: #1a73e8; transform: scale(1.05); }
+    .action-circle.done { background: #188038; box-shadow: 0 2px 6px rgba(24,128,56,0.3); }
+    .action-label { font-size: 12px; color: #5f6368; margin-top: 6px; font-weight: 500; }
+
+    .detail-body { padding: 20px; }
+    .field-item { margin-bottom: 18px; }
+    .field-label { font-size: 11px; font-weight: 600; color: #5f6368; text-transform: uppercase; margin-bottom: 4px; }
+    .field-value { font-size: 15px; color: #202124; }
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #80868b; font-size: 14px;
+    }
+
+    /* MODAL */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; z-index: 900; padding: 16px;
+    }
+    .modal-box {
+      background: #fff; border-radius: 8px; width: 100%; max-width: 460px; padding: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); max-height: 92vh; overflow-y: auto;
+    }
+    .modal-header { font-size: 18px; font-weight: 500; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    .btn-cancel { background: #fff; border: 1px solid #dadce0; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+    .btn-save { background: #1a73e8; color: #fff; border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer; font-weight: 500; }
+
+    /* LOADING OVERLAY */
+    #loader {
+      position: fixed; inset: 0; background: rgba(255,255,255,0.7); display: none; align-items: center; justify-content: center; z-index: 2000; font-weight: 500; color: #1a73e8;
+    }
+
+    @media (max-width: 768px) {
+      .main-container { flex-direction: column; }
+      .right-panel { border-top: 2px solid #e0e0e0; min-width: 100%; }
+      .search-box { width: 180px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOADER -->
+  <div id="loader">Memproses data...</div>
+
+  <!-- LOGIN SCREEN -->
+  <div id="login-screen">
+    <div class="login-card">
+      <h2>INSTAN ID</h2>
+      <p>Silakan login untuk mengakses sistem paket</p>
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="login-username" placeholder="Masukkan username">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="Masukkan password" onkeypress="if(event.key==='Enter') handleLogin()">
+      </div>
+      <button class="btn-primary" onclick="handleLogin()">Masuk</button>
+      <div id="login-error" class="error-msg"></div>
+    </div>
+  </div>
+
+  <!-- NAVBAR -->
+  <div class="navbar">
+    <div class="nav-left">
+      <span class="material-icons" style="color:#5f6368;">menu</span>
+      <span class="brand">INSTAN ID</span>
+    </div>
+    <div class="search-box">
+      <span class="material-icons" style="font-size:18px; color:#5f6368;">search</span>
+      <input type="text" id="search-input" placeholder="Search Invoice, Rack, Status..." onkeyup="renderTable()">
+    </div>
+    <div class="nav-right">
+      <span class="user-badge" id="user-display">Role</span>
+      <button class="icon-btn" onclick="loadData()" title="Refresh Data">
+        <span class="material-icons" style="font-size:18px;">refresh</span>
+      </button>
+      <button class="icon-btn" onclick="logout()" title="Keluar">
+        <span class="material-icons" style="font-size:18px;">logout</span> Logout
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-container">
+    <div class="left-panel">
+      <div class="table-header-bar">
+        <span class="table-title">Data Paket</span>
+        <button class="btn-add" id="btn-add-new" onclick="openModal('add')">
+          <span class="material-icons" style="font-size:16px;">add</span> Add
+        </button>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>INVOICE</th>
+              <th>NO RACK</th>
+              <th>NO PAKET</th>
+              <th>DATE</th>
+              <th>STATUS</th>
+              <th>KODE PENGAMBILAN</th>
+            </tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="right-panel" id="detail-panel">
+      <div class="empty-state">
+        <span class="material-icons" style="font-size:48px; margin-bottom:8px;">inventory_2</span>
+        Pilih salah satu baris paket untuk melihat detail
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ADD / EDIT -->
+  <div class="modal-backdrop" id="form-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span id="modal-title">Tambah Paket Baru</span>
+        <span class="material-icons" style="cursor:pointer;" onclick="closeModal()">close</span>
+      </div>
+
+      <div id="form-alert" class="form-alert"></div>
+
+      <input type="hidden" id="form-id">
+      <div class="form-group">
+        <label>INVOICE (Scan Barcode Kamera / Scanner / Ketik)</label>
+        <div class="input-with-btn">
+          <input type="text" id="form-invoice" placeholder="Scan barcode atau ketik invoice" onkeydown="handleInvoiceKeydown(event)">
+          <button type="button" class="btn-scan" id="btn-toggle-scanner" onclick="toggleBarcodeScanner()">
+            <span class="material-icons" style="font-size:18px;">qr_code_scanner</span>
+            <span id="scan-btn-text">Scan</span>
+          </button>
+        </div>
+        <div id="qr-reader"></div>
+      </div>
+
+      <div class="form-group">
+        <label>NO RACK</label>
+        <input type="text" id="form-rack" placeholder="Contoh: 1">
+      </div>
+      <div class="form-group">
+        <label>NO PAKET</label>
+        <input type="text" id="form-paket" placeholder="Contoh: 2 atau 2a">
+      </div>
+      <div class="form-group">
+        <label>DATE (DD/MM/YYYY atau MM/DD/YYYY)</label>
+        <input type="text" id="form-date" placeholder="21/11/2026">
+      </div>
+      <div class="form-group">
+        <label>STATUS</label>
+        <select id="form-status">
+          <option value="Undelivered">Undelivered</option>
+          <option value="Delivered">Delivered</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>KODE PENGAMBILAN</label>
+        <input type="text" id="form-kode" placeholder="Opsional">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal()">Batal</button>
+        <button class="btn-save" onclick="saveForm()">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // GANTI URL DI BAWAH INI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/MASUKKAN_DEPLOYMENT_ID_ANDA/exec';
+
+    let currentUser = null;
+    let allPackages = [];
+    let selectedId = null;
+    let modalMode = 'edit';
+    let html5QrCode = null;
+    let isScannerRunning = false;
+
+    // Helper pemanggilan JSONP ke Google Apps Script
+    function callApi(action, params, callback) {
+      if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('MASUKKAN_DEPLOYMENT_ID_ANDA')) {
+        callback({ success: false, message: 'Atur APPS_SCRIPT_URL terlebih dahulu di index.html!' });
+        return;
+      }
+
+      const cbName = 'instanCb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+      const scriptEl = document.createElement('script');
+
+      const timeoutId = setTimeout(() => {
+        cleanup();
+        callback({ success: false, message: 'Koneksi ke server timeout.' });
+      }, 20000);
+
+      function cleanup() {
+        clearTimeout(timeoutId);
+        delete window[cbName];
+        if (scriptEl.parentNode) scriptEl.parentNode.removeChild(scriptEl);
+      }
+
+      window[cbName] = function(res) {
+        cleanup();
+        callback(res);
+      };
+
+      const query = new URLSearchParams({
+        action: action,
+        callback: cbName,
+        ...(params || {})
+      });
+
+      scriptEl.src = APPS_SCRIPT_URL + '?' + query.toString();
+      scriptEl.onerror = function() {
+        cleanup();
+        callback({ success: false, message: 'Gagal menghubungi server Apps Script.' });
+      };
+      document.body.appendChild(scriptEl);
+    }
+
+    function showLoader(show) {
+      document.getElementById('loader').style.display = show ? 'flex' : 'none';
+    }
+
+    function showFormAlert(msg) {
+      const el = document.getElementById('form-alert');
+      if (!msg) {
+        el.style.display = 'none';
+        el.textContent = '';
+      } else {
+        el.style.display = 'block';
+        el.textContent = msg;
+      }
+    }
+
+    // --- BARCODE CAMERA SCANNER ---
+    function handleInvoiceKeydown(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const val = document.getElementById('form-invoice').value.trim();
+        if (val) {
+          const err = validateClientSideRacking(
+            val,
+            document.getElementById('form-rack').value.trim(),
+            document.getElementById('form-paket').value.trim()
+          );
+          showFormAlert(err);
+          document.getElementById('form-rack').focus();
+        }
+      }
+    }
+
+    function toggleBarcodeScanner() {
+      const readerEl = document.getElementById('qr-reader');
+      const btnText = document.getElementById('scan-btn-text');
+
+      if (isScannerRunning) {
+        stopBarcodeScanner();
+        return;
+      }
+
+      if (typeof Html5Qrcode === 'undefined') {
+        showFormAlert('Library scanner tidak tersedia.');
+        return;
+      }
+
+      showFormAlert('');
+      readerEl.style.display = 'block';
+      btnText.textContent = 'Stop';
+
+      html5QrCode = new Html5Qrcode('qr-reader');
+      html5QrCode.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 250, height: 130 } },
+        (decodedText) => {
+          const cleanCode = String(decodedText || '').trim();
+          document.getElementById('form-invoice').value = cleanCode;
+          stopBarcodeScanner();
+          const err = validateClientSideRacking(
+            cleanCode,
+            document.getElementById('form-rack').value.trim(),
+            document.getElementById('form-paket').value.trim()
+          );
+          showFormAlert(err);
+          document.getElementById('form-rack').focus();
+        },
+        () => {}
+      ).then(() => {
+        isScannerRunning = true;
+      }).catch((err) => {
+        readerEl.style.display = 'none';
+        btnText.textContent = 'Scan';
+        isScannerRunning = false;
+        showFormAlert('Tidak dapat mengakses kamera: ' + err);
+      });
+    }
+
+    function stopBarcodeScanner() {
+      const readerEl = document.getElementById('qr-reader');
+      const btnText = document.getElementById('scan-btn-text');
+      if (html5QrCode && isScannerRunning) {
+        html5QrCode.stop().then(() => {
+          html5QrCode.clear();
+          isScannerRunning = false;
+          readerEl.style.display = 'none';
+          btnText.textContent = 'Scan';
+        }).catch(() => {
+          isScannerRunning = false;
+          readerEl.style.display = 'none';
+          btnText.textContent = 'Scan';
+        });
+      } else {
+        isScannerRunning = false;
+        readerEl.style.display = 'none';
+        btnText.textContent = 'Scan';
+      }
+    }
+
+    // Validasi di client sebelum ke server
+    function validateClientSideRacking(invoice, rack, paket, statusVal = 'Undelivered', currentId = '') {
+      const invLower = String(invoice || '').trim().toLowerCase();
+      const rackLower = String(rack || '').trim().toLowerCase();
+      const paketLower = String(paket || '').trim().toLowerCase();
+      const isNewDelivered = String(statusVal || '').trim().toLowerCase() === 'delivered';
+
+      for (const p of allPackages) {
+        if (currentId && String(p.id) === String(currentId)) continue;
+
+        const pInv = String(p.invoice || '').trim().toLowerCase();
+        const pRack = String(p.noRack || '').trim().toLowerCase();
+        const pPaket = String(p.noPaket || '').trim().toLowerCase();
+        const pStatus = String(p.status || 'Undelivered').trim().toLowerCase();
+
+        if (invLower && pInv === invLower) {
+          return 'Invoice "' + invoice + '" sudah ada! Tidak bisa dilakukan racking.';
+        }
+
+        if (!isNewDelivered && pStatus !== 'delivered' && rackLower && paketLower && pRack === rackLower && pPaket === paketLower) {
+          return 'No Rack "' + rack + '" dan No Paket "' + paket + '" masih digunakan paket Undelivered!';
+        }
+      }
+      return '';
+    }
+
+    // --- AUTHENTICATION ---
+    function handleLogin() {
+      const u = document.getElementById('login-username').value;
+      const p = document.getElementById('login-password').value;
+      const err = document.getElementById('login-error');
+      err.textContent = '';
+
+      if (!u || !p) {
+        err.textContent = 'Username dan password wajib diisi.';
+        return;
+      }
+
+      showLoader(true);
+      callApi('login', { username: u, password: p }, res => {
+        showLoader(false);
+        if (res && res.success) {
+          currentUser = res.user;
+          document.getElementById('login-screen').style.display = 'none';
+          document.getElementById('user-display').textContent = `${currentUser.nama} (${currentUser.role.toUpperCase()})`;
+          document.getElementById('btn-add-new').style.display = (currentUser.role === 'admin') ? 'flex' : 'none';
+          loadData();
+        } else {
+          err.textContent = (res && res.message) || 'Login gagal.';
+        }
+      });
+    }
+
+    function logout() {
+      stopBarcodeScanner();
+      currentUser = null;
+      selectedId = null;
+      document.getElementById('login-username').value = '';
+      document.getElementById('login-password').value = '';
+      document.getElementById('login-screen').style.display = 'flex';
+    }
+
+    // --- LOAD & RENDER DATA ---
+    function loadData() {
+      showLoader(true);
+      callApi('getPackages', {}, res => {
+        showLoader(false);
+        if (res && res.success) {
+          allPackages = res.data || [];
+          if (!selectedId && allPackages.length > 0) {
+            selectedId = allPackages[0].id;
+          }
+          renderTable();
+          renderDetail();
+        } else {
+          alert((res && res.message) || 'Gagal memuat data.');
+        }
+      });
+    }
+
+    function renderTable() {
+      const query = document.getElementById('search-input').value.toLowerCase();
+      const tbody = document.getElementById('table-body');
+      tbody.innerHTML = '';
+
+      const filtered = allPackages.filter(item =>
+        String(item.invoice).toLowerCase().includes(query) ||
+        String(item.noRack).toLowerCase().includes(query) ||
+        String(item.noPaket).toLowerCase().includes(query) ||
+        String(item.status).toLowerCase().includes(query) ||
+        String(item.kodePengambil).toLowerCase().includes(query)
+      );
+
+      filtered.forEach(item => {
+        const tr = document.createElement('tr');
+        if (item.id === selectedId) tr.classList.add('selected');
+        tr.onclick = () => {
+          selectedId = item.id;
+          renderTable();
+          renderDetail();
+        };
+
+        const isDeliv = item.status.toLowerCase() === 'delivered';
+        const statusIcon = isDeliv ? 'check_circle' : 'local_shipping';
+        const statusClass = isDeliv ? 'status-delivered' : 'status-undelivered';
+
+        tr.innerHTML = `
+          <td>${item.invoice}</td>
+          <td>${item.noRack}</td>
+          <td>${item.noPaket}</td>
+          <td>${item.date}</td>
+          <td>
+            <span class="status-pill ${statusClass}">
+              <span class="material-icons" style="font-size:15px;">${statusIcon}</span>
+              ${item.status}
+            </span>
+          </td>
+          <td>${item.kodePengambil}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderDetail() {
+      const panel = document.getElementById('detail-panel');
+      const item = allPackages.find(p => p.id === selectedId);
+
+      if (!item) {
+        panel.innerHTML = `
+          <div class="empty-state">
+            <span class="material-icons" style="font-size:48px; margin-bottom:8px;">inventory_2</span>
+            Pilih salah satu baris paket untuk melihat detail
+          </div>`;
+        return;
+      }
+
+      const isAdmin = currentUser && currentUser.role === 'admin';
+      const isDeliv = item.status.toLowerCase() === 'delivered';
+
+      panel.innerHTML = `
+        <div class="detail-header">
+          <span class="detail-invoice-title">${item.invoice}</span>
+          <div class="detail-actions-top">
+            ${isAdmin ? `
+              <button class="btn-delete-top" onclick="confirmDelete('${item.id}')" title="Hapus Data">
+                <span class="material-icons" style="font-size:18px;">delete</span>
+              </button>
+            ` : ''}
+            <button class="btn-edit-top" onclick="openModal('edit')">
+              <span class="material-icons" style="font-size:16px;">edit</span> Edit
+            </button>
+          </div>
+        </div>
+
+        <div class="quick-action-box">
+          <div class="action-circle-wrapper" onclick="triggerDelivered('${item.id}')" title="Klik untuk ubah status menjadi Delivered">
+            <div class="action-circle ${isDeliv ? 'done' : ''}">
+              <span class="material-icons">check</span>
+            </div>
+            <span class="action-label">Delivered</span>
+          </div>
+        </div>
+
+        <div class="detail-body">
+          <div class="field-item">
+            <div class="field-label">INVOICE</div>
+            <div class="field-value">${item.invoice}</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">NO RACK</div>
+            <div class="field-value">${item.noRack}</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">NO PAKET</div>
+            <div class="field-value">${item.noPaket}</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">DATE</div>
+            <div class="field-value">${item.date}</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">STATUS</div>
+            <div class="field-value" style="font-weight:600; color:${isDeliv ? '#188038' : '#202124'}">
+              ${item.status}
+            </div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">KODE PENGAMBILAN</div>
+            <div class="field-value">${item.kodePengambil || '-'}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    // --- AKSI KLIK TOMBOL DELIVERED (TANPA POP-UP) ---
+    function triggerDelivered(id) {
+      const item = allPackages.find(p => p.id === id);
+      if (!item) return;
+
+      if (item.status.toLowerCase() === 'delivered') {
+        showLoader(true);
+        callApi('updatePackage', {
+          payload: JSON.stringify({
+            id: item.id,
+            invoice: item.invoice,
+            noRack: item.noRack,
+            noPaket: item.noPaket,
+            date: item.date,
+            status: 'Undelivered',
+            kodePengambil: item.kodePengambil
+          })
+        }, res => {
+          showLoader(false);
+          if (res && res.success) {
+            loadData();
+          } else {
+            alert((res && res.message) || 'Gagal mengubah status.');
+          }
+        });
+        return;
+      }
+
+      showLoader(true);
+      callApi('markAsDelivered', {
+        id: id,
+        kodePengambil: item.kodePengambil || ''
+      }, res => {
+        showLoader(false);
+        if (res && res.success) {
+          loadData();
+        }
+      });
+    }
+
+    // --- MODAL ADD / EDIT ---
+    function openModal(mode) {
+      modalMode = mode;
+      showFormAlert('');
+      const isAdmin = currentUser && currentUser.role === 'admin';
+      const modal = document.getElementById('form-modal');
+
+      ['form-invoice', 'form-rack', 'form-paket', 'form-date'].forEach(el => {
+        document.getElementById(el).disabled = !isAdmin;
+      });
+      document.getElementById('btn-toggle-scanner').disabled = !isAdmin;
+
+      if (mode === 'add') {
+        document.getElementById('modal-title').textContent = 'Tambah Paket Baru';
+        document.getElementById('form-id').value = '';
+        document.getElementById('form-invoice').value = '';
+        document.getElementById('form-rack').value = '';
+        document.getElementById('form-paket').value = '';
+        document.getElementById('form-date').value = new Date().toLocaleDateString('en-GB');
+        document.getElementById('form-status').value = 'Undelivered';
+        document.getElementById('form-kode').value = '';
+      } else {
+        const item = allPackages.find(p => p.id === selectedId);
+        if (!item) return;
+        document.getElementById('modal-title').textContent = 'Edit Data & Status';
+        document.getElementById('form-id').value = item.id;
+        document.getElementById('form-invoice').value = item.invoice;
+        document.getElementById('form-rack').value = item.noRack;
+        document.getElementById('form-paket').value = item.noPaket;
+        document.getElementById('form-date').value = item.date;
+        document.getElementById('form-status').value = item.status;
+        document.getElementById('form-kode').value = item.kodePengambil;
+      }
+
+      modal.style.display = 'flex';
+      if (mode === 'add' && isAdmin) {
+        setTimeout(() => document.getElementById('form-invoice').focus(), 100);
+      }
+    }
+
+    function closeModal() {
+      stopBarcodeScanner();
+      showFormAlert('');
+      document.getElementById('form-modal').style.display = 'none';
+    }
+
+    function saveForm() {
+      const payload = {
+        id: document.getElementById('form-id').value,
+        invoice: document.getElementById('form-invoice').value.trim(),
+        noRack: document.getElementById('form-rack').value.trim(),
+        noPaket: document.getElementById('form-paket').value.trim(),
+        date: document.getElementById('form-date').value.trim(),
+        status: document.getElementById('form-status').value,
+        kodePengambil: document.getElementById('form-kode').value.trim()
+      };
+
+      if (!payload.invoice) {
+        showFormAlert('Nomor Invoice wajib diisi!');
+        return;
+      }
+
+      const clientError = validateClientSideRacking(
+        payload.invoice,
+        payload.noRack,
+        payload.noPaket,
+        payload.status,
+        modalMode === 'edit' ? payload.id : ''
+      );
+      if (clientError) {
+        showFormAlert(clientError);
+        return;
+      }
+
+      stopBarcodeScanner();
+      showLoader(true);
+
+      const action = (modalMode === 'add') ? 'addPackage' : 'updatePackage';
+      callApi(action, { payload: JSON.stringify(payload) }, res => {
+        showLoader(false);
+        if (res && res.success) {
+          closeModal();
+          loadData();
+        } else {
+          showFormAlert((res && res.message) || 'Gagal menyimpan data.');
+        }
+      });
+    }
+
+    function confirmDelete(id) {
+      if (confirm('Yakin ingin menghapus data invoice ini?')) {
+        showLoader(true);
+        callApi('deletePackage', { id: id }, () => {
+          selectedId = null;
+          loadData();
+        });
+      }
+    }
+  </script>
+</body>
+</html>
